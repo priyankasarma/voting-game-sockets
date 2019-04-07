@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket.IO chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        form { background: #ccc; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+    </style>
+</head>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+    $(function () {
+        var radioValue = $("input[name='options']:checked").val();
+
+        var initialAppState = {
+            users: [],
+            started: false,
+            ended: false,
+            latestVote: '',
+            // todo make this dynamic with data from super user
+            votes: [
+                {
+                    name: 'Cat',
+                    id: 1,
+                    count: 0,
+                },
+                {
+                    name: 'Cow',
+                    id: 2,
+                    count: 0,
+                },
+                {
+                    name: 'Pig',
+                    id: 3,
+                    count: 0,
+                },
+                {
+                    name: 'Dog',
+                    id: 4,
+                    count: 0,
+                }
+            ]
+        };
+        var state = initialAppState;
+
+        var incrementCount = function(appState, name) {
+            appState.votes.forEach(function(option, index){
+                if(option.name === name){
+                    appState.votes[index].count++;
+                }
+            });
+        };
+
+        var socket = io.connect('http://localhost:3001');
+
+        $('#cat-votes-count').text(initialAppState.votes[0].count);
+        $('#cow-votes-count').text(initialAppState.votes[1].count);
+        $('#pig-votes-count').text(initialAppState.votes[2].count);
+        $('#dog-votes-count').text(initialAppState.votes[3].count);
+
+        $('form').submit(function(e){
+            e.preventDefault(); // prevents page reloading
+
+            incrementCount(state, radioValue);
+            state.latestVote = radioValue;
+
+            socket.emit('vote', state, function(data){
+                console.log('ACK recd: vote', data);
+            });
+
+            return false;
+        });
+
+
+        socket.on('vote', function(appState){
+            $('#messages').append($('<li>').text(appState.latestVote));
+
+            $('#cat-votes-count').text(appState.votes[0].count);
+            $('#cow-votes-count').text(appState.votes[1].count);
+            $('#pig-votes-count').text(appState.votes[2].count);
+            $('#dog-votes-count').text(appState.votes[3].count);
+
+            state = appState;
+        });
+
+        $("input[type='radio']").click(function() {
+            radioValue = $("input[name='options']:checked").val();
+        });
+    });
+</script>
+<body>
+    <ul id="messages"></ul>
+    <form action="">
+        <input id="vote-cat" autocomplete="off" type="radio" name="options" value="Cat"/>Cat <span id="cat-votes-count"></span>
+        <input id="vote-dog" autocomplete="off" type="radio" name="options" value="Dog"/>Dog <span id="dog-votes-count"></span>
+        <input id="vote-pig" autocomplete="off" type="radio" name="options" value="Pig"/>Pig <span id="pig-votes-count"></span>
+        <input id="vote-cow" autocomplete="off" type="radio" name="options" value="Cow"/>Cow <span id="cow-votes-count"></span>
+        <button>Send</button>
+    </form>
+</body>
+</html>
