@@ -30,41 +30,39 @@
                 {
                     name: 'Cat',
                     id: 1,
-                    count: 0,
+                    count: 0
                 },
                 {
                     name: 'Cow',
                     id: 2,
-                    count: 0,
+                    count: 0
                 },
                 {
                     name: 'Pig',
                     id: 3,
-                    count: 0,
+                    count: 0
                 },
                 {
                     name: 'Dog',
                     id: 4,
-                    count: 0,
+                    count: 0
                 }
             ]
         };
         var state = initialAppState;
-
-        var incrementCount = function(appState, name) {
-            appState.votes.forEach(function(option, index){
-                if(option.name === name){
-                    appState.votes[index].count++;
-                }
-            });
+        var socket = io.connect('http://localhost:3001');
+        var nickname = 'voter ' + Math.floor(Math.random() * 100);
+        var user = {
+            name: nickname,
+            lastVote: '',
+            admin: false
         };
 
-        var socket = io.connect('http://localhost:3001');
+        state.users.push(user);
+        socket.emit('nick-name', nickname, state);
+        $('#voter-name-header').text('Name: ' + nickname);
 
-        $('#cat-votes-count').text(initialAppState.votes[0].count);
-        $('#cow-votes-count').text(initialAppState.votes[1].count);
-        $('#pig-votes-count').text(initialAppState.votes[2].count);
-        $('#dog-votes-count').text(initialAppState.votes[3].count);
+        updateVoteCountLabels(initialAppState.votes);
 
         $('form').submit(function(e){
             e.preventDefault(); // prevents page reloading
@@ -83,11 +81,12 @@
         socket.on('vote', function(appState){
             $('#messages').append($('<li>').text(appState.latestVote));
 
-            $('#cat-votes-count').text(appState.votes[0].count);
-            $('#cow-votes-count').text(appState.votes[1].count);
-            $('#pig-votes-count').text(appState.votes[2].count);
-            $('#dog-votes-count').text(appState.votes[3].count);
+            updateVoteCountLabels(appState.votes);
 
+            state = appState;
+        });
+
+        socket.on('update-users', function(appState){
             state = appState;
         });
 
@@ -95,8 +94,24 @@
             radioValue = $("input[name='options']:checked").val();
         });
     });
+
+    var incrementCount = function(appState, name) {
+        appState.votes.forEach(function(option, index){
+            if(option.name === name){
+                appState.votes[index].count++;
+            }
+        });
+    };
+
+    var updateVoteCountLabels = function(votes) {
+        $('#cat-votes-count').text(votes[0].count);
+        $('#cow-votes-count').text(votes[1].count);
+        $('#pig-votes-count').text(votes[2].count);
+        $('#dog-votes-count').text(votes[3].count);
+    }
 </script>
 <body>
+    <h2 id="voter-name-header">Voter Name: </h2>
     <ul id="messages"></ul>
     <form action="">
         <input id="vote-cat" autocomplete="off" type="radio" name="options" value="Cat"/>Cat <span id="cat-votes-count"></span>

@@ -16,14 +16,19 @@ app.get('/', function(req, res){
 });
 
 io.on('connection', function(socket){
-    console.log('a user connected');
+    // console.log('a user connected', socket);
+    socket.on('nick-name', function(nickName, appState){
+        console.log(nickName, 'just joined');
+        socket.nickName = nickName;
+        io.emit('update-users', appState);
+    });
 
     socket.on('disconnect', function(){
         console.log('user disconnected');
     });/**/
 
     socket.on('vote', function(appState, callback){
-        console.log('appState: ' + JSON.stringify(appState));
+        // console.log('appState: ' + JSON.stringify(appState));
         io.emit('vote', appState);
         //callback(msg);
     });
